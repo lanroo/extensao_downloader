@@ -1,11 +1,5 @@
 document.getElementById('download-button').addEventListener('click', async () => {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const url = tab.url;
-
-    if (!url.includes('youtube.com/watch')) {
-        alert('Por favor, abra um vídeo do YouTube.');
-        return;
-    }
+    const url = document.getElementById('url-input').value;
 
     try {
         const response = await fetch('http://127.0.0.1:5000/download', {
@@ -35,4 +29,5 @@ document.getElementById('download-button').addEventListener('click', async () =>
         console.error('Erro:', error);
         alert('Erro ao tentar baixar o vídeo. Verifique a URL e tente novamente.');
     }
+
 });

@@ -1,15 +1,17 @@
 {
-    "manifest_version": 3,
+    "manifest_version": 2,
     "name": "YouTube Video Downloader",
     "version": "1.0",
     "description": "Download YouTube videos as MP4.",
     "permissions": [
-        "activeTab"
+        "activeTab",
+        "downloads"
     ],
     "background": {
-        "service_worker": "background.js"
+        "scripts": ["background.js"],
+        "persistent": false
     },
-    "action": {
+    "browser_action": {
         "default_popup": "popup.html",
         "default_icon": {
             "16": "icon.png",
