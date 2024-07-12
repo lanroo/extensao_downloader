@@ -1,25 +1,25 @@
 {
-    "manifest_version": 2,
+    "manifest_version": 3,
     "name": "YouTube Video Downloader",
-    "description": "Download videos from YouTube as MP4.",
     "version": "1.0",
+    "description": "Download YouTube videos as MP4.",
     "permissions": [
-      "activeTab",
-      "downloads"
+        "activeTab"
     ],
-    "browser_action": {
-      "default_popup": "popup.html",
-      "default_icon": "icon.png"
-    },
     "background": {
-      "scripts": ["background.js"],
-      "persistent": false
+        "service_worker": "background.js"
     },
-    "content_scripts": [
-      {
-        "matches": ["*://www.youtube.com/*"],
-        "js": ["content.js"]
-      }
-    ]
-  }
-  
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon.png",
+            "48": "icon.png",
+            "128": "icon.png"
+        }
+    },
+    "icons": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+    }
+}
