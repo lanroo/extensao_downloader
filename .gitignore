@@ -1,7 +1,10 @@
 
-/downloads
-/venv
+venv/
 __pycache__/
+downloads/
+Lib/
+Scripts/
+share/
 remove_pycache.py
 socket.io.min.js
 pyvenv.cfg
