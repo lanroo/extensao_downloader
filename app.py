@@ -32,25 +32,42 @@ def download_video():
     try:
         data = request.json
         url = data['url']
+        format = data['format']
         
-        ydl_opts = {
-            'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
-            'format': 'bestvideo+bestaudio/best',
-            'progress_hooks': [my_hook],
-        }
+        if format == 'mp3':
+            ydl_opts = {
+                'format': 'bestaudio/best',
+                'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio',
+                    'preferredcodec': 'mp3',
+                    'preferredquality': '192',
+                }],
+                'progress_hooks': [my_hook],
+            }
+        else:
+            ydl_opts = {
+                'format': 'bestvideo+bestaudio/best',
+                'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
+                'merge_output_format': 'mp4',
+                'progress_hooks': [my_hook],
+            }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
-            file_title = ydl.prepare_filename(info_dict)
+            if format == 'mp3':
+                file_title = ydl.prepare_filename(info_dict).rsplit('.', 1)[0] + '.mp3'
+            else:
+                file_title = ydl.prepare_filename(info_dict).rsplit('.', 1)[0] + '.mp4'
         
         if os.path.exists(file_title):
             return send_file(file_title, as_attachment=True, download_name=os.path.basename(file_title))
         else:
             return jsonify({'error': f"Arquivo não encontrado: {file_title}"}), 500
     except yt_dlp.utils.DownloadError as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f"Erro ao baixar o vídeo: {e}"}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f"Erro inesperado: {e}"}), 500
 
 def my_hook(d):
     if d['status'] == 'downloading':

@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (downloadButton) {
         downloadButton.addEventListener('click', async () => {
             const url = document.getElementById('url-input').value;
+            const format = document.querySelector('input[name="format"]:checked').value;
             document.getElementById('progress-container').style.display = 'block';
 
             try {
@@ -13,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ url: url }),
+                    body: JSON.stringify({ url: url, format: format }),
                 });
 
                 if (response.ok) {
