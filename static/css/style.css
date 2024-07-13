@@ -77,4 +77,23 @@ h1 {
     color: white;
     line-height: 20px;
     border-radius: 5px;
+    transition: width 0.3s;
+}
+
+.swal2-popup {
+    width: 299px !important;
+    max-width: 90% !important;
+    padding: 1px !important; 
+}
+
+.swal2-title {
+    font-size: 18px !important;
+}
+
+.swal2-content {
+    font-size: 16px !important;
+}
+
+.swal2-icon {
+    font-size: 8px !important;
 }
