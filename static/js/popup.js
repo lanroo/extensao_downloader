@@ -1,8 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
     const downloadButton = document.getElementById('download-button');
+    const cancelButton = document.getElementById('cancel-button');
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
     const socket = io('http://127.0.0.1:5000');
+    let taskId = null;
 
     // Test CORS
     fetch('http://127.0.0.1:5000/test-cors')
@@ -29,17 +31,19 @@ document.addEventListener('DOMContentLoaded', function () {
         const percent = data.percent;
         console.log(`Received progress: ${percent}%`);
         updateProgress(percent);
-        localStorage.setItem('savedProgress', percent); 
+        localStorage.setItem('savedProgress', percent);
     });
 
     if (downloadButton) {
         downloadButton.addEventListener('click', async () => {
-            downloadButton.disabled = true; // Disable the button during the download
+            downloadButton.style.display = 'none';
+            cancelButton.style.display = 'block';
+
             const url = document.getElementById('url-input').value;
             const format = document.querySelector('input[name="format"]:checked').value;
             progressContainer.style.display = 'block';
             updateProgress(0);
-            localStorage.setItem('savedUrl', url); 
+            localStorage.setItem('savedUrl', url);
 
             try {
                 console.log("Starting download...");
@@ -51,30 +55,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     body: JSON.stringify({ url: url, format: format }),
                 });
 
-                if (response.ok) {
-                    console.log("Download started, waiting for completion...");
-                    const blob = await response.blob();
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    let fileName = 'video.mp4';
-                    if (contentDisposition) {
-                        const matches = /filename\*?=['"]?([^'";]+)['"]?/.exec(contentDisposition);
-                        if (matches != null && matches[1]) { 
-                            fileName = decodeURIComponent(matches[1]);
-                        }
-                    }
+                const responseData = await response.json();
+                taskId = responseData.task_id;
 
-                    const downloadUrl = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = downloadUrl;
-                    a.download = fileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(downloadUrl);
-                    Swal.fire('Download concluído com sucesso!', '', 'success');
-                    localStorage.removeItem('savedUrl'); 
-                    localStorage.removeItem('savedProgress'); 
-                } else {
+                if (!response.ok) {
                     const errorText = await response.text();
                     console.error('Download failed:', errorText);
                     Swal.fire('Falha no download', errorText, 'error');
@@ -82,11 +66,40 @@ document.addEventListener('DOMContentLoaded', function () {
             } catch (error) {
                 console.error('Download error:', error);
                 Swal.fire('Erro ao tentar baixar o vídeo', error.message, 'error');
-            } finally {
-                downloadButton.disabled = false; 
             }
         });
     }
+
+    cancelButton.addEventListener('click', async () => {
+        if (taskId) {
+            try {
+                const response = await fetch('http://127.0.0.1:5000/cancel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ task_id: taskId }),
+                });
+
+                const responseData = await response.json();
+
+                if (responseData.status === 'canceled') {
+                    Swal.fire('Download cancelado', '', 'info');
+                    downloadButton.style.display = 'block';
+                    cancelButton.style.display = 'none';
+                    progressContainer.style.display = 'none';
+                    updateProgress(0);
+                    localStorage.removeItem('savedUrl');
+                    localStorage.removeItem('savedProgress');
+                } else {
+                    Swal.fire('Erro', 'Download não encontrado ou já finalizado', 'error');
+                }
+            } catch (error) {
+                console.error('Cancel error:', error);
+                Swal.fire('Erro ao tentar cancelar o download', error.message, 'error');
+            }
+        }
+    });
 
     function updateProgress(percent) {
         progressBar.style.width = `${percent}%`;

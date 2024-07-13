@@ -17,6 +17,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
 download_lock = threading.Lock()
 current_progress = {"percent": 0}
+downloads = {}
 
 def remove_pycache():
     for root, dirs, files in os.walk('.'):
@@ -41,59 +42,20 @@ def test_cors():
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 
-@app.route('/download', methods=['POST'])
-def download_video():
-    with download_lock:
-        try:
-            data = request.json
-            url = data['url']
-            format = data['format']
-            print(f"Received download request for URL: {url} and format: {format}")
-            
-            ydl_opts = {
-                'format': 'bestaudio/best' if format == 'mp3' else 'bestvideo+bestaudio/best',
-                'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
-                'merge_output_format': 'mp4' if format != 'mp3' else None,
-                'progress_hooks': [my_hook],
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio' if format == 'mp3' else 'FFmpegVideoConvertor',
-                    'preferredcodec': 'mp3' if format == 'mp3' else 'mp4',
-                    'preferredquality': '192' if format == 'mp3' else None,
-                }] if format == 'mp3' else [],
-                'noplaylist': True,
-                'continuedl': True,
-                'ratelimit': None,
-            }
-
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info_dict = ydl.extract_info(url, download=True)
-                title = info_dict.get('title', 'video')
-                if format == 'mp3':
-                    file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp3")
-                else:
-                    file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp4")
-            
-            if os.path.exists(file_title):
-                encoded_title = urllib.parse.quote(os.path.basename(file_title))
-                return Response(generate(file_title), headers={
-                    'Content-Disposition': f'attachment; filename="{encoded_title}"',
-                    'Content-Length': os.path.getsize(file_title),
-                    'Access-Control-Allow-Origin': '*'
-                })
-            else:
-                return jsonify({'error': f"Arquivo não encontrado: {file_title}"}), 500
-        except yt_dlp.utils.DownloadError as e:
-            print(f"Download error: {e}")
-            return jsonify({'error': f"Erro ao baixar o vídeo: {e}"}), 500
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return jsonify({'error': f"Erro inesperado: {e}"}), 500
+def clean_percentage_string(percent_str):
+    """Remove caracteres ANSI e outros não numéricos."""
+    # Remove caracteres ANSI
+    percent_str = re.sub(r'\x1b\[[0-9;]*m', '', percent_str)
+    # Remove qualquer coisa que não seja um dígito ou ponto
+    percent_str = re.sub(r'[^\d.]', '', percent_str)
+    return percent_str.strip()
 
 def my_hook(d):
     if d['status'] == 'downloading':
-        percent_str = re.sub(r'\x1b\[[0-9;]*m', '', d['_percent_str']).replace('%', '').strip()
-        percent_str = percent_str.replace('\x1b[0;94m', '').replace('\x1b[0m', '').strip()
-        print(f"Download status: {d['status']}, Percent: {percent_str}")
+        percent_str = d['_percent_str'].strip()
+        # Limpar a string de porcentagem
+        percent_str = clean_percentage_string(percent_str)
+        
         try:
             percent = float(percent_str)
             current_progress["percent"] = percent
@@ -106,6 +68,43 @@ def my_hook(d):
         print("Download finished")
         current_progress["percent"] = 100
         socketio.emit('progress', {'percent': 100})
+
+def download_video(url, format, task_id):
+    ydl_opts = {
+        'format': 'bestaudio/best' if format == 'mp3' else 'bestvideo+bestaudio',
+        'progress_hooks': [my_hook],
+        'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, f'{task_id}.%(ext)s'),
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        }
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+    except Exception as e:
+        print(f"Download error: {e}")
+    finally:
+        downloads.pop(task_id, None)
+
+@app.route('/download', methods=['POST'])
+def start_download():
+    data = request.json
+    url = data['url']
+    format = data['format']
+    task_id = str(int(time.time() * 1000))
+    downloads[task_id] = {'cancel': False}
+    thread = threading.Thread(target=download_video, args=(url, format, task_id))
+    thread.start()
+    return jsonify({'task_id': task_id})
+
+@app.route('/cancel', methods=['POST'])
+def cancel_download():
+    data = request.json
+    task_id = data['task_id']
+    if task_id in downloads:
+        downloads[task_id]['cancel'] = True
+        return jsonify({'status': 'canceled'})
+    return jsonify({'status': 'not_found'})
 
 @app.route('/progress', methods=['GET'])
 def get_progress():
