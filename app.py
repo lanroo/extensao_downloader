@@ -14,6 +14,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+
 DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
 download_lock = threading.Lock()
 current_progress = {"percent": 0}
@@ -101,10 +102,14 @@ def start_download():
 def cancel_download():
     data = request.json
     task_id = data['task_id']
+    print(f"Cancel request received for task_id: {task_id}")  # Log para depuração
     if task_id in downloads:
         downloads[task_id]['cancel'] = True
+        print(f"Task {task_id} canceled.")  # Log para depuração
         return jsonify({'status': 'canceled'})
+    print(f"Task {task_id} not found.")  # Log para depuração
     return jsonify({'status': 'not_found'})
+
 
 @app.route('/progress', methods=['GET'])
 def get_progress():

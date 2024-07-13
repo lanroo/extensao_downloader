@@ -6,13 +6,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const socket = io('http://127.0.0.1:5000');
     let taskId = null;
 
+    // Função para atualizar a barra de progresso
+    function updateProgress(percent) {
+        progressBar.style.width = `${percent}%`;
+        progressBar.innerText = `${percent.toFixed(2)}%`;
+        console.log(`Progress updated: ${percent}%`);
+    }
+
     // Test CORS
     fetch('http://127.0.0.1:5000/test-cors')
         .then(response => response.json())
         .then(data => console.log(data.message))
         .catch(error => console.error('CORS test failed:', error));
 
-    // Load previous URL and progress
+    // Carregar URL e progresso anteriores
     const savedUrl = localStorage.getItem('savedUrl');
     const savedProgress = localStorage.getItem('savedProgress');
     if (savedUrl) {
@@ -70,40 +77,38 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    cancelButton.addEventListener('click', async () => {
-        if (taskId) {
-            try {
-                const response = await fetch('http://127.0.0.1:5000/cancel', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ task_id: taskId }),
-                });
+    if (cancelButton) {
+        cancelButton.addEventListener('click', async () => {
+            console.log('Attempting to cancel download...');
+            if (taskId) {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/cancel', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ task_id: taskId }),
+                    });
 
-                const responseData = await response.json();
+                    const responseData = await response.json();
+                    console.log('Cancel response:', responseData);
 
-                if (responseData.status === 'canceled') {
-                    Swal.fire('Download cancelado', '', 'info');
-                    downloadButton.style.display = 'block';
-                    cancelButton.style.display = 'none';
-                    progressContainer.style.display = 'none';
-                    updateProgress(0);
-                    localStorage.removeItem('savedUrl');
-                    localStorage.removeItem('savedProgress');
-                } else {
-                    Swal.fire('Erro', 'Download não encontrado ou já finalizado', 'error');
+                    if (responseData.status === 'canceled') {
+                        Swal.fire('Download cancelado', '', 'info');
+                        downloadButton.style.display = 'block';
+                        cancelButton.style.display = 'none';
+                        progressContainer.style.display = 'none';
+                        updateProgress(0);
+                        localStorage.removeItem('savedUrl');
+                        localStorage.removeItem('savedProgress');
+                    } else {
+                        Swal.fire('Erro', 'Download não encontrado ou já finalizado', 'error');
+                    }
+                } catch (error) {
+                    console.error('Cancel error:', error);
+                    Swal.fire('Erro ao tentar cancelar o download', error.message, 'error');
                 }
-            } catch (error) {
-                console.error('Cancel error:', error);
-                Swal.fire('Erro ao tentar cancelar o download', error.message, 'error');
             }
-        }
-    });
-
-    function updateProgress(percent) {
-        progressBar.style.width = `${percent}%`;
-        progressBar.innerText = `${percent.toFixed(2)}%`;
-        console.log(`Progress updated: ${percent}%`);
+        });
     }
 });
