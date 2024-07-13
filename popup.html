@@ -4,30 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download Video</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="static/js/socket.io.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="static/js/sweetalert2.all.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
+            width: 400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        #url-input {
+            width: 90%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
         .radio-group {
             display: flex;
             justify-content: center;
             gap: 10px;
-        }
-        .radio-group input {
-            margin-right: 5px;
+            margin-bottom: 15px;
         }
         .radio-group label {
             display: flex;
             align-items: center;
+            font-size: 16px;
+        }
+        .radio-group input {
+            margin-right: 5px;
+        }
+        #download-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #download-button:hover {
+            background-color: #0056b3;
+        }
+        #progress-container {
+            margin-top: 20px;
+        }
+        #progress-bar {
+            width: 90%;
         }
     </style>
 </head>
 <body>
-    <h1><i class="fa fa-download"></i> Download Video</h1>
-    <input type="text" id="url-input" placeholder="Enter YouTube URL" />
+    <h1><i class="fas fa-download"></i> Download Video</h1>
+    <div class="input-group">
+        <input type="text" id="url-input" placeholder="Enter YouTube URL" />
+    </div>
     <div class="radio-group">
         <label>
             <input type="radio" name="format" value="mp4" checked> MP4
@@ -36,7 +77,7 @@
             <input type="radio" name="format" value="mp3"> MP3
         </label>
     </div>
-    <button id="download-button">Download</button>
+    <button id="download-button"><i class="fas fa-download"></i> Download</button>
     <div id="progress-container" style="display: none;">
         <label for="progress-bar">Download progress:</label>
         <progress id="progress-bar" value="0" max="100"></progress>

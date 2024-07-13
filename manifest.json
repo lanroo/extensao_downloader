@@ -20,7 +20,7 @@
     ],
     "web_accessible_resources": [
         {
-            "resources": ["static/js/socket.io.min.js"],
+            "resources": ["static/js/socket.io.min.js", "static/js/sweetalert2.all.min.js"],
             "matches": ["<all_urls>"]
         }
     ],
