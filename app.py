@@ -10,25 +10,21 @@ import shutil
 import urllib.parse
 import threading
 
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
+download_lock = threading.Lock()
+current_progress = {"percent": 0}
+
 def remove_pycache():
     for root, dirs, files in os.walk('.'):
         for dir in dirs:
             if dir == '__pycache__':
                 shutil.rmtree(os.path.join(root, dir))
 
-# Remover __pycache__ antes de iniciar o servidor
 remove_pycache()
-
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-# Diretório absoluto para a pasta downloads
-DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
-
-# Mutex para controle de acesso ao arquivo
-download_lock = threading.Lock()
 
 def generate(video_path):
     with open(video_path, 'rb') as f:
@@ -99,7 +95,8 @@ def my_hook(d):
         percent_str = percent_str.replace('\x1b[0;94m', '').replace('\x1b[0m', '').strip()
         print(f"Download status: {d['status']}, Percent: {percent_str}")
         try:
-            percent = float(percent_str)  
+            percent = float(percent_str)
+            current_progress["percent"] = percent
             print(f"Emitting progress: {percent}%")
             socketio.emit('progress', {'percent': percent})
         except ValueError as e:
@@ -107,10 +104,15 @@ def my_hook(d):
             print(f"Exception: {e}")
     elif d['status'] == 'finished':
         print("Download finished")
+        current_progress["percent"] = 100
         socketio.emit('progress', {'percent': 100})
+
+@app.route('/progress', methods=['GET'])
+def get_progress():
+    return jsonify(current_progress)
 
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)  
+    socketio.run(app, debug=True)
