@@ -20,12 +20,12 @@
     ],
     "web_accessible_resources": [
         {
-            "resources": ["socket.io.min.js"],
+            "resources": ["static/js/socket.io.min.js"],
             "matches": ["<all_urls>"]
         }
     ],
     "action": {
-        "default_popup": "popup.html",
+        "default_popup": "templates/popup.html",
         "default_icon": "icon.png"
     },
     "content_security_policy": {

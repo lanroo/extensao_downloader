@@ -22,17 +22,11 @@ def download_video():
     data = request.json
     url = data['url']
     format = data['format']
-    extension = 'mp4' if format == 'mp4' else 'mp3'
-    video_path = os.path.join(DOWNLOAD_DIRECTORY, f'video.{extension}')
+    video_path = os.path.join(DOWNLOAD_DIRECTORY, f'video.{format}')
     ydl_opts = {
         'outtmpl': video_path,
-        'format': 'bestaudio/best' if format == 'mp3' else 'bestvideo+bestaudio/best',
+        'format': 'bestvideo+bestaudio/best' if format == 'mp4' else 'bestaudio/best',
         'progress_hooks': [my_hook],
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }] if format == 'mp3' else [],
     }
 
     try:
@@ -42,7 +36,7 @@ def download_video():
             ydl.download([url])
         print(f"Download concluído. Enviando o arquivo {video_path}...", flush=True)
         if os.path.exists(video_path):
-            return send_file(video_path, as_attachment=True, download_name=f'video.{extension}')
+            return send_file(video_path, as_attachment=True, download_name=f'video.{format}')
         else:
             print(f"Arquivo não encontrado: {video_path}", flush=True)
             return jsonify({'error': f"Arquivo não encontrado: {video_path}"}), 500
