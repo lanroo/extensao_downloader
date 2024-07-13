@@ -1,0 +1,5 @@
+
+/downloads
+/venv
+__pycache__/
+remove_pycache.py

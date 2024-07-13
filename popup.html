@@ -4,11 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download Video</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        input, select {
+            width: 300px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .radio-group {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .radio-group label {
+            margin: 0 10px;
+        }
+        #progress-container {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Download Video</h1>
+    <h1><i class="fas fa-download"></i> Download Video</h1>
     <input type="text" id="url-input" placeholder="Enter YouTube URL" />
-    <button id="download-button">Download MP4</button>
+    <div class="radio-group">
+        <label><input type="radio" name="format" value="mp4" checked> MP4</label>
+        <label><input type="radio" name="format" value="mp3"> MP3</label>
+    </div>
+    <button id="download-button"><i class="fas fa-file-download"></i> Download</button>
+    <div id="progress-container" style="display: none;">
+        <label for="progress-bar">Download progress:</label>
+        <progress id="progress-bar" value="0" max="100"></progress>
+    </div>
     <script src="popup.js"></script>
 </body>
 </html>
