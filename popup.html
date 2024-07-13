@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Download Video</title>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Socket.IO -->
     <script src="socket.io.min.js"></script>
-    <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Custom CSS -->
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -20,30 +16,30 @@
         h1 {
             margin-bottom: 20px;
         }
-        input, select {
+        input {
             width: 300px;
             padding: 10px;
             margin-bottom: 10px;
         }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
         .radio-group {
             display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 10px; /* Ajuste o espaço entre os elementos */
             margin-bottom: 20px;
         }
         .radio-group label {
-            margin: 0;
+            margin: 0 10px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
         }
         #progress-container {
             margin-top: 20px;
@@ -57,7 +53,7 @@
         <label><input type="radio" name="format" value="mp4" checked> MP4</label>
         <label><input type="radio" name="format" value="mp3"> MP3</label>
     </div>
-    <button id="download-button"><i class="fas fa-file-download"></i> Download</button>
+    <button id="download-button"><i class="fas fa-download"></i> Download</button>
     <div id="progress-container" style="display: none;">
         <label for="progress-bar">Download progress:</label>
         <progress id="progress-bar" value="0" max="100"></progress>

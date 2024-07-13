@@ -30,8 +30,8 @@ def download_video():
     }
 
     try:
-        print(f"Iniciando o download do vídeo da URL: {url}", flush=True)  # Log da URL
-        print(f"Salvando o vídeo em: {video_path}", flush=True)  # Log do caminho do arquivo
+        print(f"Iniciando o download do vídeo da URL: {url}", flush=True)
+        print(f"Salvando o vídeo em: {video_path}", flush=True)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         print(f"Download concluído. Enviando o arquivo {video_path}...", flush=True)
@@ -41,12 +41,12 @@ def download_video():
             print(f"Arquivo não encontrado: {video_path}", flush=True)
             return jsonify({'error': f"Arquivo não encontrado: {video_path}"}), 500
     except Exception as e:
-        print(f"Erro ao baixar o vídeo: {e}", flush=True)  # Adicionando print para depuração
+        print(f"Erro ao baixar o vídeo: {e}", flush=True)
         return jsonify({'error': str(e)}), 500
 
 def my_hook(d):
     if d['status'] == 'downloading':
-        print(f"Progresso: {d['_percent_str']}", flush=True)  # Log do progresso
+        print(f"Progresso: {d['_percent_str']}", flush=True)
         socketio.emit('progress', {'percent': d['_percent_str']})
 
 logging.basicConfig(level=logging.DEBUG)

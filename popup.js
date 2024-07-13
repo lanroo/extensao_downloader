@@ -27,14 +27,27 @@ document.addEventListener('DOMContentLoaded', function () {
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(downloadUrl);
-                    Swal.fire('Success', 'Download concluído com sucesso!', 'success');
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Download concluído com sucesso!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
                 } else {
                     console.error('Falha no download:', response.statusText);
-                    Swal.fire('Error', 'Falha no download. Por favor, tente novamente.', 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Falha no download',
+                        text: 'Por favor, tente novamente.',
+                    });
                 }
             } catch (error) {
                 console.error('Erro:', error);
-                Swal.fire('Error', 'Erro ao tentar baixar o vídeo. Verifique a URL e tente novamente.', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Erro ao tentar baixar o vídeo',
+                    text: 'Verifique a URL e tente novamente.',
+                });
             }
 
             document.getElementById('progress-container').style.display = 'none';
