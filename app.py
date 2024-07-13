@@ -22,21 +22,24 @@ def download_video():
     data = request.json
     url = data['url']
     format = data['format']
-    video_path = os.path.join(DOWNLOAD_DIRECTORY, f'video.{format}')
     ydl_opts = {
-        'outtmpl': video_path,
+        'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
         'format': 'bestvideo+bestaudio/best' if format == 'mp4' else 'bestaudio/best',
         'progress_hooks': [my_hook],
     }
 
     try:
         print(f"Iniciando o download do vídeo da URL: {url}", flush=True)
-        print(f"Salvando o vídeo em: {video_path}", flush=True)
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            result = ydl.download([url])
+            video_info = ydl.extract_info(url, download=False)
+            video_title = video_info['title']
+            video_extension = 'mp4' if format == 'mp4' else 'webm'
+            video_path = os.path.join(DOWNLOAD_DIRECTORY, f'{video_title}.{video_extension}')
+
         print(f"Download concluído. Enviando o arquivo {video_path}...", flush=True)
         if os.path.exists(video_path):
-            return send_file(video_path, as_attachment=True, download_name=f'video.{format}')
+            return send_file(video_path, as_attachment=True, download_name=f'{video_title}.{video_extension}')
         else:
             print(f"Arquivo não encontrado: {video_path}", flush=True)
             return jsonify({'error': f"Arquivo não encontrado: {video_path}"}), 500
@@ -46,8 +49,13 @@ def download_video():
 
 def my_hook(d):
     if d['status'] == 'downloading':
-        print(f"Progresso: {d['_percent_str']}", flush=True)
-        socketio.emit('progress', {'percent': d['_percent_str']})
+        percent_str = d['_percent_str'].replace('\x1b[0;94m', '').replace('\x1b[0m', '').strip()
+        try:
+            percent = float(percent_str.strip('%'))
+            print(f"Progresso: {d['_percent_str']}", flush=True)
+            socketio.emit('progress', {'percent': percent})
+        except ValueError as e:
+            print(f"Erro ao converter a string de progresso: {e}", flush=True)
 
 logging.basicConfig(level=logging.DEBUG)
 
