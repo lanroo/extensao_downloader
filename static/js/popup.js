@@ -2,18 +2,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const socket = io('http://127.0.0.1:5000');
 
     const downloadButton = document.getElementById('download-button');
-    const initialPage = document.getElementById('initial-page');
-    const progressPage = document.getElementById('progress-page');
-    const progressBar = document.getElementById('progress-bar');
-    const progressPercent = document.getElementById('progress-percent');
-
     if (downloadButton) {
         downloadButton.addEventListener('click', async () => {
             const url = document.getElementById('url-input').value;
             const format = document.querySelector('input[name="format"]:checked').value;
-
-            initialPage.style.display = 'none';
-            progressPage.style.display = 'block';
+            document.getElementById('progress-container').style.display = 'block';
 
             try {
                 const response = await fetch('http://127.0.0.1:5000/download', {
@@ -27,7 +20,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok) {
                     const blob = await response.blob();
                     const contentDisposition = response.headers.get('Content-Disposition');
-                    const fileName = contentDisposition ? contentDisposition.split('filename=')[1].replace(/["']/g, "") : 'video';
+                    let fileName = 'video';
+                    if (contentDisposition) {
+                        const matches = /filename\*?=['"]?([^'";]+)['"]?/.exec(contentDisposition);
+                        if (matches != null && matches[1]) { 
+                            fileName = decodeURIComponent(matches[1]);
+                        }
+                    }
                     const downloadUrl = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.style.display = 'none';
@@ -43,15 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             } catch (error) {
                 Swal.fire('Erro ao tentar baixar o vídeo', error.message, 'error');
-            } finally {
-                initialPage.style.display = 'block';
-                progressPage.style.display = 'none';
             }
         });
     }
-
-    socket.on('progress', (data) => {
-        progressBar.value = data.percent;
-        progressPercent.textContent = `${data.percent}%`;
-    });
 });

@@ -14,7 +14,7 @@
             background-color: #f4f4f4;
             padding: 20px;
             width: 450px;
-            margin: 0px auto;;
+            margin: 0 auto;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
         }
@@ -61,28 +61,9 @@
         }
         #progress-container {
             margin-top: 20px;
-            display: none;
         }
         #progress-bar {
             width: 100%;
-            height: 20px;
-            border-radius: 10px;
-            overflow: hidden;
-            background-color: #e0e0e0;
-        }
-        #progress-bar::-webkit-progress-bar {
-            background-color: #e0e0e0;
-        }
-        #progress-bar::-webkit-progress-value {
-            background-color: #007bff;
-        }
-        #progress-bar::-moz-progress-bar {
-            background-color: #007bff;
-        }
-        #progress-percent {
-            margin-top: 10px;
-            font-size: 18px;
-            color: #333;
         }
         .swal2-popup {
             width: 299px !important;
@@ -101,25 +82,22 @@
     </style>
 </head>
 <body>
-    <div id="initial-page">
-        <h1><i class="fas fa-download"></i> Download Video</h1>
-        <div class="input-group">
-            <input type="text" id="url-input" placeholder="Enter YouTube URL" />
-        </div>
-        <div class="radio-group">
-            <label>
-                <input type="radio" name="format" value="mp4" checked> Video
-            </label>
-            <label>
-                <input type="radio" name="format" value="mp3"> Música
-            </label>
-        </div>
-        <button id="download-button"><i class="fas fa-download"></i> Download</button>
+    <h1><i class="fas fa-download"></i> Download Video</h1>
+    <div class="input-group">
+        <input type="text" id="url-input" placeholder="Enter YouTube URL" />
     </div>
-    <div id="progress-page" style="display: none;">
+    <div class="radio-group">
+        <label>
+            <input type="radio" name="format" value="mp4" checked> Video
+        </label>
+        <label>
+            <input type="radio" name="format" value="mp3"> Música
+        </label>
+    </div>
+    <button id="download-button"><i class="fas fa-download"></i> Download</button>
+    <div id="progress-container" style="display: none;">
         <label for="progress-bar">Download progress:</label>
         <progress id="progress-bar" value="0" max="100"></progress>
-        <p id="progress-percent">0%</p>
     </div>
     <script src="static/js/popup.js"></script>
 </body>

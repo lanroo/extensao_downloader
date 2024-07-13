@@ -4,6 +4,7 @@ from flask_cors import CORS
 import yt_dlp
 import os
 import shutil
+import urllib.parse
 
 def remove_pycache():
     for root, dirs, files in os.walk('.'):
@@ -58,7 +59,8 @@ def download_video():
                 file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp4")
         
         if os.path.exists(file_title):
-            return send_file(file_title, as_attachment=True, download_name=os.path.basename(file_title))
+            encoded_title = urllib.parse.quote(os.path.basename(file_title))
+            return send_file(file_title, as_attachment=True, download_name=encoded_title)
         else:
             return jsonify({'error': f"Arquivo não encontrado: {file_title}"}), 500
     except yt_dlp.utils.DownloadError as e:
