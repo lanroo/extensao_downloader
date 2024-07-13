@@ -1,10 +1,14 @@
-from flask import Flask, request, send_file, jsonify
+import re
+import time
+import json
+from flask import Flask, request, jsonify, Response, render_template
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import yt_dlp
 import os
 import shutil
 import urllib.parse
+import threading
 
 def remove_pycache():
     for root, dirs, files in os.walk('.'):
@@ -18,69 +22,95 @@ remove_pycache()
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Configure SocketIO to allow connections from the extension
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Diretório absoluto para a pasta downloads
 DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
 
+# Mutex para controle de acesso ao arquivo
+download_lock = threading.Lock()
+
+def generate(video_path):
+    with open(video_path, 'rb') as f:
+        while chunk := f.read(4096):
+            yield chunk
+
 @app.route('/')
 def index():
-    return "Server is running. Use the extension to download videos."
+    return render_template('index.html')
+
+@app.route('/test-cors', methods=['GET'])
+def test_cors():
+    response = jsonify({'message': 'CORS is working!'})
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    try:
-        data = request.json
-        url = data['url']
-        format = data['format']
-        
-        ydl_opts = {
-            'format': 'bestaudio/best' if format == 'mp3' else 'bestvideo+bestaudio/best',
-            'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
-            'merge_output_format': 'mp4' if format != 'mp3' else None,
-            'progress_hooks': [my_hook],
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio' if format == 'mp3' else 'FFmpegVideoConvertor',
-                'preferredcodec': 'mp3' if format == 'mp3' else 'mp4',
-                'preferredquality': '192' if format == 'mp3' else None,
-            }] if format == 'mp3' else [],
-            'noplaylist': True,
-            'continuedl': True,
-            'ratelimit': None,
-        }
+    with download_lock:
+        try:
+            data = request.json
+            url = data['url']
+            format = data['format']
+            print(f"Received download request for URL: {url} and format: {format}")
+            
+            ydl_opts = {
+                'format': 'bestaudio/best' if format == 'mp3' else 'bestvideo+bestaudio/best',
+                'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
+                'merge_output_format': 'mp4' if format != 'mp3' else None,
+                'progress_hooks': [my_hook],
+                'postprocessors': [{
+                    'key': 'FFmpegExtractAudio' if format == 'mp3' else 'FFmpegVideoConvertor',
+                    'preferredcodec': 'mp3' if format == 'mp3' else 'mp4',
+                    'preferredquality': '192' if format == 'mp3' else None,
+                }] if format == 'mp3' else [],
+                'noplaylist': True,
+                'continuedl': True,
+                'ratelimit': None,
+            }
 
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url, download=True)
-            title = info_dict.get('title', 'video')
-            if format == 'mp3':
-                file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp3")
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(url, download=True)
+                title = info_dict.get('title', 'video')
+                if format == 'mp3':
+                    file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp3")
+                else:
+                    file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp4")
+            
+            if os.path.exists(file_title):
+                encoded_title = urllib.parse.quote(os.path.basename(file_title))
+                return Response(generate(file_title), headers={
+                    'Content-Disposition': f'attachment; filename="{encoded_title}"',
+                    'Content-Length': os.path.getsize(file_title),
+                    'Access-Control-Allow-Origin': '*'
+                })
             else:
-                file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp4")
-        
-        if os.path.exists(file_title):
-            encoded_title = urllib.parse.quote(os.path.basename(file_title))
-            return send_file(file_title, as_attachment=True, download_name=encoded_title)
-        else:
-            return jsonify({'error': f"Arquivo não encontrado: {file_title}"}), 500
-    except yt_dlp.utils.DownloadError as e:
-        return jsonify({'error': f"Erro ao baixar o vídeo: {e}"}), 500
-    except Exception as e:
-        return jsonify({'error': f"Erro inesperado: {e}"}), 500
+                return jsonify({'error': f"Arquivo não encontrado: {file_title}"}), 500
+        except yt_dlp.utils.DownloadError as e:
+            print(f"Download error: {e}")
+            return jsonify({'error': f"Erro ao baixar o vídeo: {e}"}), 500
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return jsonify({'error': f"Erro inesperado: {e}"}), 500
 
 def my_hook(d):
     if d['status'] == 'downloading':
-        percent_str = d['_percent_str'].replace('%', '').strip()
+        percent_str = re.sub(r'\x1b\[[0-9;]*m', '', d['_percent_str']).replace('%', '').strip()
+        percent_str = percent_str.replace('\x1b[0;94m', '').replace('\x1b[0m', '').strip()
+        print(f"Download status: {d['status']}, Percent: {percent_str}")
         try:
-            percent = float(percent_str.replace(',', '.'))
+            percent = float(percent_str)  
+            print(f"Emitting progress: {percent}%")
             socketio.emit('progress', {'percent': percent})
-        except ValueError:
-            pass
+        except ValueError as e:
+            print(f"ValueError: Could not convert percent_str to float: {percent_str}")
+            print(f"Exception: {e}")
     elif d['status'] == 'finished':
-        pass
+        print("Download finished")
+        socketio.emit('progress', {'percent': 100})
 
 if not os.path.exists(DOWNLOAD_DIRECTORY):
     os.makedirs(DOWNLOAD_DIRECTORY)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=False)
+    socketio.run(app, debug=True)  
