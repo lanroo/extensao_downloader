@@ -3,3 +3,5 @@
 /venv
 __pycache__/
 remove_pycache.py
+socket.io.min.js
+pyvenv.cfg
