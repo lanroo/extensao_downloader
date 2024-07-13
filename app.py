@@ -34,31 +34,28 @@ def download_video():
         url = data['url']
         format = data['format']
         
-        if format == 'mp3':
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                }],
-                'progress_hooks': [my_hook],
-            }
-        else:
-            ydl_opts = {
-                'format': 'bestvideo+bestaudio/best',
-                'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
-                'merge_output_format': 'mp4',
-                'progress_hooks': [my_hook],
-            }
+        ydl_opts = {
+            'format': 'bestaudio/best' if format == 'mp3' else 'bestvideo+bestaudio/best',
+            'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
+            'merge_output_format': 'mp4' if format != 'mp3' else None,
+            'progress_hooks': [my_hook],
+            'postprocessors': [{
+                'key': 'FFmpegExtractAudio' if format == 'mp3' else 'FFmpegVideoConvertor',
+                'preferredcodec': 'mp3' if format == 'mp3' else 'mp4',
+                'preferredquality': '192' if format == 'mp3' else None,
+            }] if format == 'mp3' else [],
+            'noplaylist': True,
+            'continuedl': True,
+            'ratelimit': None,
+        }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
+            title = info_dict.get('title', 'video')
             if format == 'mp3':
-                file_title = ydl.prepare_filename(info_dict).rsplit('.', 1)[0] + '.mp3'
+                file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp3")
             else:
-                file_title = ydl.prepare_filename(info_dict).rsplit('.', 1)[0] + '.mp4'
+                file_title = os.path.join(DOWNLOAD_DIRECTORY, f"{title}.mp4")
         
         if os.path.exists(file_title):
             return send_file(file_title, as_attachment=True, download_name=os.path.basename(file_title))
