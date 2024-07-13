@@ -3,7 +3,6 @@ from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import yt_dlp
 import os
-import logging
 import shutil
 
 def remove_pycache():
@@ -30,52 +29,42 @@ def index():
 
 @app.route('/download', methods=['POST'])
 def download_video():
-    data = request.json
-    url = data['url']
-    format = data['format']
-    ydl_opts = {
-        'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
-        'format': 'bestvideo+bestaudio/best',
-        'merge_output_format': 'mp4',
-        'progress_hooks': [my_hook],
-        'postprocessors': [{
-            'key': 'FFmpegVideoConvertor',
-            'preferedformat': 'mp4',  # Ensure the output format is mp4
-        }],
-    }
-
     try:
-        print(f"Iniciando o download do vídeo da URL: {url}", flush=True)
+        data = request.json
+        url = data['url']
+        
+        ydl_opts = {
+            'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
+            'format': 'bestvideo+bestaudio/best',
+            'progress_hooks': [my_hook],
+        }
+
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
             file_title = ydl.prepare_filename(info_dict)
-        file_path = os.path.splitext(file_title)[0] + '.mp4'
-        print(f"Download concluído. Enviando o arquivo {file_path}...", flush=True)
-        if os.path.exists(file_path):
-            return send_file(file_path, as_attachment=True, download_name=os.path.basename(file_path))
+        
+        if os.path.exists(file_title):
+            return send_file(file_title, as_attachment=True, download_name=os.path.basename(file_title))
         else:
-            print(f"Arquivo não encontrado: {file_path}", flush=True)
-            return jsonify({'error': f"Arquivo não encontrado: {file_path}"}), 500
+            return jsonify({'error': f"Arquivo não encontrado: {file_title}"}), 500
+    except yt_dlp.utils.DownloadError as e:
+        return jsonify({'error': str(e)}), 500
     except Exception as e:
-        print(f"Erro ao baixar o vídeo: {e}", flush=True)
         return jsonify({'error': str(e)}), 500
 
 def my_hook(d):
     if d['status'] == 'downloading':
         percent_str = d['_percent_str'].replace('%', '').strip()
         try:
-            percent = float(percent_str)
+            percent = float(percent_str.replace(',', '.'))
             socketio.emit('progress', {'percent': percent})
         except ValueError:
-            print(f"Erro ao converter {percent_str} para float.")
+            pass
     elif d['status'] == 'finished':
-        print("Download finished.", flush=True)
-
-logging.basicConfig(level=logging.DEBUG)
+        pass
 
 if not os.path.exists(DOWNLOAD_DIRECTORY):
-    print(f"Criando diretório de downloads: {DOWNLOAD_DIRECTORY}", flush=True)
     os.makedirs(DOWNLOAD_DIRECTORY)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=False)
