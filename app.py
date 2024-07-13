@@ -35,8 +35,13 @@ def download_video():
     format = data['format']
     ydl_opts = {
         'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, '%(title)s.%(ext)s'),
-        'format': 'bestvideo+bestaudio/best' if format == 'mp4' else 'bestaudio/best',
+        'format': 'bestvideo+bestaudio/best',
+        'merge_output_format': 'mp4',
         'progress_hooks': [my_hook],
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',  # Ensure the output format is mp4
+        }],
     }
 
     try:
@@ -44,7 +49,7 @@ def download_video():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info_dict = ydl.extract_info(url, download=True)
             file_title = ydl.prepare_filename(info_dict)
-        file_path = os.path.splitext(file_title)[0] + ('.mp4' if format == 'mp4' else '.mp3')
+        file_path = os.path.splitext(file_title)[0] + '.mp4'
         print(f"Download concluído. Enviando o arquivo {file_path}...", flush=True)
         if os.path.exists(file_path):
             return send_file(file_path, as_attachment=True, download_name=os.path.basename(file_path))
