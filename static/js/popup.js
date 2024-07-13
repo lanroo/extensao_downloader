@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     const a = document.createElement('a');
                     a.style.display = 'none';
                     a.href = downloadUrl;
-                    a.download = response.headers.get('Content-Disposition').split('filename=')[1].replace(/"/g, '');
+                    a.download = `video.${format}`;
                     document.body.appendChild(a);
                     a.click();
                     window.URL.revokeObjectURL(downloadUrl);
@@ -44,7 +44,6 @@ document.addEventListener('DOMContentLoaded', function () {
             const progressBar = document.getElementById('progress-bar');
             if (progressBar) {
                 progressBar.value = data.percent;
-                progressBar.innerText = `${data.percent}%`; // Adiciona a porcentagem ao texto
             }
         });
     }
