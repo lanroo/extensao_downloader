@@ -8,7 +8,7 @@
     <script src="static/js/socket.io.min.js"></script>
     <script src="static/js/sweetalert2.all.min.js"></script>
     <style>
-        body {
+       body {
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: #f4f4f4;
@@ -26,7 +26,7 @@
             margin-bottom: 15px;
         }
         #url-input {
-            width: 90%;
+            width: 91%;
             padding: 10px;
             font-size: 16px;
             border: 1px solid #ccc;
@@ -35,7 +35,7 @@
         .radio-group {
             display: flex;
             justify-content: center;
-            gap: 10px;
+            gap: 20px;
             margin-bottom: 15px;
         }
         .radio-group label {
@@ -54,6 +54,7 @@
             font-size: 16px;
             border-radius: 5px;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
         #download-button:hover {
             background-color: #0056b3;
@@ -62,7 +63,21 @@
             margin-top: 20px;
         }
         #progress-bar {
-            width: 90%;
+            width: 100%;
+        }
+        .swal2-popup {
+            width: 299px !important;
+            max-width: 90% !important;
+            padding: 1px !important; 
+        }       
+        .swal2-title {
+            font-size: 18px !important;
+        }
+        .swal2-content {
+            font-size: 16px !important;
+        }
+        .swal2-icon {
+            font-size: 8px !important;
         }
     </style>
 </head>
