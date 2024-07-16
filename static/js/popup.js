@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.log('Connected to server');
     });
 
+    // TODO: update to use the new status event instead, new structure is task_id + status + progress
     socket.on('progress', function (data) {
         const percent = data.percent;
         console.log(`Received progress: ${percent}%`);
