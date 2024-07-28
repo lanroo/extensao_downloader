@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const cancelButton = document.getElementById('cancel-button');
     const progressContainer = document.getElementById('progress-container');
     const progressBar = document.getElementById('progress-bar');
+    const refreshButton = document.getElementById('refresh-button');
     const socket = io('http://127.0.0.1:5000');
     let taskId = null;
 
@@ -18,6 +19,16 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(response => response.json())
         .then(data => console.log(data.message))
         .catch(error => console.error('CORS test failed:', error));
+
+    // Atualização botão
+    refreshButton.addEventListener('click', function() {
+        // Limpar cache local
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Recarregar a extensão
+        location.reload();
+    });
 
     // Carregar URL e progresso anteriores
     const savedUrl = localStorage.getItem('savedUrl');

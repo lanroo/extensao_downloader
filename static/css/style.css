@@ -73,6 +73,25 @@ h1 {
     background-color: #0056b3;
 }
 
+.button-container {
+    text-align: center;
+}
+
+button#cancel-button {
+    margin: 0 auto; 
+    display: block; 
+}
+
+
+.download-button {
+    text-align: center;
+}
+
+button#download-button {
+    margin: 0 auto; 
+    display: block; 
+}
+
 #progress-container {
     margin-top: 20px;
     display: none;

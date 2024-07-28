@@ -1,22 +1,19 @@
 import re
 import time
 import json
-from flask import Flask, request, jsonify, Response, render_template
+from flask import Flask, request, jsonify, render_template
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import yt_dlp
 import os
 import shutil
-import urllib.parse
 import threading
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-
 DOWNLOAD_DIRECTORY = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'downloads')
-download_lock = threading.Lock()
 current_progress = {"percent": 0}
 downloads = {}
 
@@ -43,6 +40,8 @@ def test_cors():
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 
+# Funções relacionadas a popup.html
+
 def clean_percentage_string(percent_str):
     """Remove caracteres ANSI e outros não numéricos."""
     # Remove caracteres ANSI
@@ -52,9 +51,12 @@ def clean_percentage_string(percent_str):
     return percent_str.strip()
 
 def my_hook(d):
+    task_id = d['info_dict'].get('task_id')
+    if task_id and is_canceled(task_id):
+        raise yt_dlp.utils.DownloadError('Download canceled by user')
+    
     if d['status'] == 'downloading':
         percent_str = d['_percent_str'].strip()
-        # Limpar a string de porcentagem
         percent_str = clean_percentage_string(percent_str)
         
         try:
@@ -70,20 +72,42 @@ def my_hook(d):
         current_progress["percent"] = 100
         socketio.emit('progress', {'percent': 100})
 
-def download_video(url, format, task_id):
+def is_canceled(task_id):
+    return downloads.get(task_id, {}).get('cancel', False)
+
+class MyLogger:
+    def debug(self, msg):
+        if 'download' in msg:
+            print(msg)
+
+    def warning(self, msg):
+        print(msg)
+
+    def error(self, msg):
+        print(msg)
+
+def custom_download(url, format, task_id):
     ydl_opts = {
         'format': 'bestaudio/best' if format == 'mp3' else 'bestvideo+bestaudio',
-        'progress_hooks': [my_hook],
         'outtmpl': os.path.join(DOWNLOAD_DIRECTORY, f'{task_id}.%(ext)s'),
+        'logger': MyLogger(),
+        'progress_hooks': [my_hook],
         'http_headers': {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         }
     }
+    
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info_dict = ydl.extract_info(url, download=False)
+            info_dict['task_id'] = task_id  
+            
             ydl.download([url])
-    except Exception as e:
-        print(f"Download error: {e}")
+    except yt_dlp.utils.DownloadError as e:
+        if str(e) == 'Download canceled by user':
+            print(f"Download {task_id} foi cancelado.")
+        else:
+            print(f"Erro no download: {e}")
     finally:
         downloads.pop(task_id, None)
 
@@ -94,7 +118,8 @@ def start_download():
     format = data['format']
     task_id = str(int(time.time() * 1000))
     downloads[task_id] = {'cancel': False}
-    thread = threading.Thread(target=download_video, args=(url, format, task_id))
+    thread = threading.Thread(target=custom_download, args=(url, format, task_id))
+    downloads[task_id]['thread'] = thread
     thread.start()
     return jsonify({'task_id': task_id})
 
@@ -102,14 +127,17 @@ def start_download():
 def cancel_download():
     data = request.json
     task_id = data['task_id']
-    print(f"Cancel request received for task_id: {task_id}")  # Log para depuração
+    print(f"Cancel request received for task_id: {task_id}")  
     if task_id in downloads:
         downloads[task_id]['cancel'] = True
+        thread = downloads[task_id].get('thread')
+        if thread:
+            # Ensure the thread is stopped
+            thread.join(timeout=1)  
         print(f"Task {task_id} canceled.")  # Log para depuração
         return jsonify({'status': 'canceled'})
     print(f"Task {task_id} not found.")  # Log para depuração
     return jsonify({'status': 'not_found'})
-
 
 @app.route('/progress', methods=['GET'])
 def get_progress():
