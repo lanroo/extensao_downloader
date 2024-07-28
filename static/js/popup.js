@@ -7,30 +7,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const socket = io('http://127.0.0.1:5000');
     let taskId = null;
 
-    // Função para atualizar a barra de progresso
     function updateProgress(percent) {
         progressBar.style.width = `${percent}%`;
         progressBar.innerText = `${percent.toFixed(2)}%`;
         console.log(`Progress updated: ${percent}%`);
     }
 
-    // Test CORS
     fetch('http://127.0.0.1:5000/test-cors')
         .then(response => response.json())
         .then(data => console.log(data.message))
         .catch(error => console.error('CORS test failed:', error));
 
-    // Atualização botão
     refreshButton.addEventListener('click', function() {
-        // Limpar cache local
         localStorage.clear();
         sessionStorage.clear();
-
-        // Recarregar a extensão
         location.reload();
     });
 
-    // Carregar URL e progresso anteriores
     const savedUrl = localStorage.getItem('savedUrl');
     const savedProgress = localStorage.getItem('savedProgress');
     if (savedUrl) {
@@ -80,6 +73,31 @@ document.addEventListener('DOMContentLoaded', function () {
                     const errorText = await response.text();
                     console.error('Download failed:', errorText);
                     Swal.fire('Falha no download', errorText, 'error');
+                } else {
+                    const checkDownloadInterval = setInterval(async () => {
+                        const response = await fetch(`http://127.0.0.1:5000/progress`);
+                        const progressData = await response.json();
+
+                        if (progressData.percent === 100) {
+                            clearInterval(checkDownloadInterval);
+
+                            const downloadLink = `http://127.0.0.1:5000/downloaded-file/${taskId}`;
+                            const a = document.createElement('a');
+                            a.href = downloadLink;
+                            a.download = ''; 
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+
+                            Swal.fire('Download completo', 'Seu download foi concluído', 'success');
+                            downloadButton.style.display = 'block';
+                            cancelButton.style.display = 'none';
+                            progressContainer.style.display = 'none';
+                            updateProgress(0);
+                            localStorage.removeItem('savedUrl');
+                            localStorage.removeItem('savedProgress');
+                        }
+                    }, 1000);
                 }
             } catch (error) {
                 console.error('Download error:', error);

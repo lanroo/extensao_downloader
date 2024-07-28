@@ -40,58 +40,10 @@
     </div>
     <button id="downloadBtn" class="btn btn-primary">Download</button>
     <div class="progress mt-3">
-        <div class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+        <div class="progress-bar" role="progressbar" style="width: 0%;">0%</</div>
     </div>
 </div>
 
-<script>
-    const socket = io();
-
-    $(document).ready(function() {
-        // Fetch progress on page load
-        $.get('/progress', function(data) {
-            updateProgressBar(data.percent);
-        });
-
-        $('#downloadBtn').click(function() {
-            const url = $('#url').val();
-            const format = $('input[name="format"]:checked').val();
-            $.ajax({
-                url: '/download',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ url: url, format: format }),
-                success: function(response) {
-                    console.log('Download started');
-                    $('.progress').show(); // Show progress bar when download starts
-                },
-                error: function(error) {
-                    console.log('Error:', error);
-                }
-            });
-        });
-
-        socket.on('progress', function(data) {
-            updateProgressBar(data.percent);
-        });
-
-        function updateProgressBar(percent) {
-            $('.progress-bar').css('width', percent + '%').text(percent + '%');
-        }
-
-        $('#refreshBtn').click(function() {
-            localStorage.clear();
-            sessionStorage.clear();
-            resetForm();
-        });
-
-        function resetForm() {
-            $('#url').val('');
-            $('input[name="format"][value="mp4"]').prop('checked', true);
-            updateProgressBar(0);
-            $('.progress').hide(); // Hide progress bar on refresh
-        }
-    });
-</script>
+<script src="main.js"></script>
 </body>
 </html>

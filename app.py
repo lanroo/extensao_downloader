@@ -1,7 +1,7 @@
 import re
 import time
 import json
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
 import yt_dlp
@@ -123,6 +123,11 @@ def start_download():
     thread.start()
     return jsonify({'task_id': task_id})
 
+@app.route('/downloaded-file/<task_id>', methods=['GET'])
+def get_downloaded_file(task_id):
+    file_path = os.path.join(DOWNLOAD_DIRECTORY, f'{task_id}.mp4')  
+    return send_file(file_path, as_attachment=True)
+
 @app.route('/cancel', methods=['POST'])
 def cancel_download():
     data = request.json
@@ -132,7 +137,6 @@ def cancel_download():
         downloads[task_id]['cancel'] = True
         thread = downloads[task_id].get('thread')
         if thread:
-            # Ensure the thread is stopped
             thread.join(timeout=1)  
         print(f"Task {task_id} canceled.")  # Log para depuração
         return jsonify({'status': 'canceled'})
